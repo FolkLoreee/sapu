@@ -33,6 +33,54 @@ func TestFilesEmpty(t *testing.T) {
 	}
 }
 
+func TestBatches(t *testing.T) {
+	tests := []struct {
+		name  string
+		names []string
+		size  int
+		want  [][]string
+	}{
+		{
+			name:  "empty",
+			names: nil,
+			size:  20,
+			want:  nil,
+		},
+		{
+			name:  "fewer than size",
+			names: []string{"a", "b", "c"},
+			size:  20,
+			want:  [][]string{{"a", "b", "c"}},
+		},
+		{
+			name:  "exact multiple",
+			names: []string{"a", "b", "c", "d"},
+			size:  2,
+			want:  [][]string{{"a", "b"}, {"c", "d"}},
+		},
+		{
+			name:  "uneven remainder",
+			names: []string{"a", "b", "c", "d", "e"},
+			size:  2,
+			want:  [][]string{{"a", "b"}, {"c", "d"}, {"e"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := batches(tt.names, tt.size)
+			if len(got) != len(tt.want) {
+				t.Fatalf("batches = %d groups, want %d", len(got), len(tt.want))
+			}
+			for i := range got {
+				if !testutil.EqualStrings(got[i], tt.want[i]) {
+					t.Errorf("batches[%d] = %v, want %v", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestTrashScript(t *testing.T) {
 	paths := []string{"/photos/raw/img2.cr2", "/photos/raw/img3.cr2"}
 	script := TrashScript(paths)

@@ -25,13 +25,36 @@ func Files(dir string, names []string, hard bool) error {
 		return nil
 	}
 
-	paths := make([]string, len(names))
-	for i, name := range names {
-		paths[i] = filepath.Join(dir, name)
+	for _, batch := range batches(names, trashBatchSize) {
+		paths := make([]string, len(batch))
+		for i, name := range batch {
+			paths[i] = filepath.Join(dir, name)
+		}
+		cmd := exec.Command("osascript", "-e", TrashScript(paths))
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
 	}
-	cmd := exec.Command("osascript", "-e", TrashScript(paths))
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return nil
+}
+
+// trashBatchSize caps the number of files passed to Finder in a single delete
+// command. Large lists make Finder intermittently fail with error -10010.
+const trashBatchSize = 100
+
+// batches splits names into consecutive groups of at most size elements,
+// preserving order.
+func batches(names []string, size int) [][]string {
+	var out [][]string
+	for i := 0; i < len(names); i += size {
+		end := i + size
+		if end > len(names) {
+			end = len(names)
+		}
+		out = append(out, names[i:end])
+	}
+	return out
 }
 
 // TrashScript returns an AppleScript snippet that moves the given paths to the
