@@ -81,6 +81,32 @@ func TestBatches(t *testing.T) {
 	}
 }
 
+func TestAbsPaths(t *testing.T) {
+	dir := "RAW"
+	got, err := absPaths(dir, []string{"img1.cr2", "img2.cr2"})
+	if err != nil {
+		t.Fatalf("absPaths: %v", err)
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd: %v", err)
+	}
+
+	want := []string{
+		filepath.Join(cwd, "RAW", "img1.cr2"),
+		filepath.Join(cwd, "RAW", "img2.cr2"),
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("absPaths[%d] = %q, want %q", i, got[i], want[i])
+		}
+		if !filepath.IsAbs(got[i]) {
+			t.Errorf("absPaths[%d] = %q is not absolute", i, got[i])
+		}
+	}
+}
+
 func TestTrashScript(t *testing.T) {
 	paths := []string{"/photos/raw/img2.cr2", "/photos/raw/img3.cr2"}
 	script := TrashScript(paths)

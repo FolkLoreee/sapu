@@ -26,9 +26,9 @@ func Files(dir string, names []string, hard bool) error {
 	}
 
 	for _, batch := range batches(names, trashBatchSize) {
-		paths := make([]string, len(batch))
-		for i, name := range batch {
-			paths[i] = filepath.Join(dir, name)
+		paths, err := absPaths(dir, batch)
+		if err != nil {
+			return err
 		}
 		cmd := exec.Command("osascript", "-e", TrashScript(paths))
 		cmd.Stderr = os.Stderr
@@ -37,6 +37,20 @@ func Files(dir string, names []string, hard bool) error {
 		}
 	}
 	return nil
+}
+
+// absPaths returns the absolute paths of the named files under dir. Finder's
+// delete command cannot resolve relative POSIX paths.
+func absPaths(dir string, names []string) ([]string, error) {
+	paths := make([]string, len(names))
+	for i, name := range names {
+		abs, err := filepath.Abs(filepath.Join(dir, name))
+		if err != nil {
+			return nil, err
+		}
+		paths[i] = abs
+	}
+	return paths, nil
 }
 
 // trashBatchSize caps the number of files passed to Finder in a single delete
